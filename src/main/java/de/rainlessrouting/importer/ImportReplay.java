@@ -10,15 +10,15 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import de.rainlessrouting.common.util.DateTimeFormatter;
+import org.slf4j.LoggerFactory;
 
 
 public class ImportReplay {
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(ImportReplay.class);
 
 	public final static String GRID_ID = "replay";
 	
 	private File localDataDirectory;
-	
-	private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH-mm");
 	
 	private List<String> fileList;
 	
@@ -31,27 +31,27 @@ public class ImportReplay {
 	
 	private void init(String fileDir, long startTimestamp, long endTimestamp, long period, boolean clearDB)
 	{
-		fileList = new LinkedList<String>();
+		fileList = new LinkedList<>();
 		
-		if (fileDir == null)
+		if (fileDir == null) {
 			localDataDirectory = new File(Paths.get(System.getProperty("user.dir"), "data").toString());
-		else
-		{
+		} else {
 			localDataDirectory = new File(fileDir);
 		}
 		
-		if (!localDataDirectory.exists())
-		{
-			System.err.println("ImportReplay.init: Directory '" + localDataDirectory + "' does not exist.");
+		if (!localDataDirectory.exists()) {
+			log.error("ImportReplay.init: Directory '" + localDataDirectory + "' does not exist.");
 			return;
 		}
 
+		/* Add all netCDF files to the file list */
 		File[] files = localDataDirectory.listFiles();
 		for (int i=0; i < files.length; i++)
 		{
 			File oneFile = files[i];
 			String fileName = oneFile.getName();
-			if (fileName.endsWith(".png"))
+
+			if (!fileName.endsWith(".nc"))
 				continue;
 			
 			long timestamp = Long.parseLong(fileName.substring(0, fileName.indexOf(" ")));
@@ -62,18 +62,18 @@ public class ImportReplay {
 		
 		Collections.sort(fileList);
 		
-		System.out.println("ImportReplay: Found " + fileList.size() + " files to replay: " + fileList);
+		log.debug("ImportReplay: Found " + fileList.size() + " files to replay: " + fileList);
 		if (fileList.size() == 0)
 		{
-			System.err.println("ImportReplay: No files found in '" + localDataDirectory + "' for time range " + DateTimeFormatter.getDateTimeSeconds(startTimestamp) + " -> " + DateTimeFormatter.getDateTimeSeconds(endTimestamp));
+			log.debug("ImportReplay: No files found in '" + localDataDirectory + "' for time range " + DateTimeFormatter.getDateTimeSeconds(startTimestamp) + " -> " + DateTimeFormatter.getDateTimeSeconds(endTimestamp));
 			return;
 		}
 		
 		importFile = new ImportFile(clearDB);
 		
 		Timer timer = new Timer("RainlessRoutingImporter-ReplayData");
+
 		TimerTask tt = new TimerTask() {
-			
 			int counter = 0;
 			
 			public void run() 
@@ -81,7 +81,7 @@ public class ImportReplay {
 				try 
 				{
 					String fileName = fileList.get(counter);
-					System.out.println("ImportReplay: #" + counter + ": " + fileName);
+					log.debug("ImportReplay: #" + counter + ": " + fileName);
 					
 					importFile.importData(fileName, GRID_ID);
 					if (counter == fileList.size()-1) // we reached the end of the list
@@ -90,7 +90,7 @@ public class ImportReplay {
 				catch (Exception e) 
 				{
 					e.printStackTrace();
-					System.err.println("ImportReplay.importData: Failed to import: " + e.getMessage());
+					log.error("ImportReplay.importData: Failed to import: " + e.getMessage());
 				}
 				
 				counter++;
