@@ -3,6 +3,7 @@ package de.rainlessrouting.dataprocessing;
 import java.util.Date;
 import java.util.UUID;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,13 +13,10 @@ import de.rainlessrouting.dataprocessing.model.UpdateMessage;
 
 @Controller
 public class PrecipitationDataProcessingController {
-     
-	
-	
-    private Date lastPrecipiationUpdate; 
-	
-	
-	
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(PrecipitationDataProcessingApplication.class);
+
+	private Date lastPrecipitationUpdate;
+
 	@GetMapping("/PrecipitationDataUpdate")
     public @ResponseBody UpdateMessage  getPrecipitationDataUpdate() {
         
@@ -27,8 +25,8 @@ public class PrecipitationDataProcessingController {
 		String uuid = UUID.randomUUID().toString();
 		message.setId(uuid);
 		
-	    if(this.lastPrecipiationUpdate != null) {
-	    		message.setLastUpdateAt(lastPrecipiationUpdate.toString());
+	    if(this.lastPrecipitationUpdate != null) {
+	    		message.setLastUpdateAt(lastPrecipitationUpdate.toString());
 	    } else {
 	       	//message.setLastUpdateAt("not available");
 	       	message.setResponseBody("There was no incomming update registered until now.");
@@ -40,10 +38,8 @@ public class PrecipitationDataProcessingController {
 	
 	@PostMapping("/PrecipitationDataUpdate")
     public @ResponseBody String postPrecipitationDataUpdate() {
-		this.lastPrecipiationUpdate = new Date();
+		this.lastPrecipitationUpdate = new Date();
         
     		return "Was succesfull posted.";
     }
-
-
 }
