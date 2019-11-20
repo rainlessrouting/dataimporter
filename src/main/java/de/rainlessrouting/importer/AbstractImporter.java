@@ -1,7 +1,6 @@
 package de.rainlessrouting.importer;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 
 import de.rainlessrouting.common.db.DBGeoGrid;
 import de.rainlessrouting.common.db.DBGridInfo;
@@ -9,12 +8,13 @@ import de.rainlessrouting.common.db.DBValueGrid;
 import de.rainlessrouting.common.db.IDatabaseHandler;
 import de.rainlessrouting.common.db.SqliteHandler;
 import de.rainlessrouting.common.util.DateTimeFormatter;
-import de.rainlessrouting.common.util.Logger;
+import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 public abstract class AbstractImporter {
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(AbstractImporter.class);
 
 	protected IDatabaseHandler dbHandler;
 	protected NetcdfFile ncFile = null;
@@ -34,7 +34,7 @@ public abstract class AbstractImporter {
 		
 		try
 		{
-			System.out.println("AbstractImporter.initDB: init DB & delete all data & create new table");
+			log.debug("AbstractImporter.initDB: init DB & delete all data & create new table");
 			dbHandler.init();
 			if (clearDB)
 				dbHandler.dropTables();
@@ -42,7 +42,7 @@ public abstract class AbstractImporter {
 		}
 		catch(Exception exc)
 		{
-			System.err.println("AbstractImporter.initDB: failed to init DB :-( " + exc.getMessage());
+			log.error("AbstractImporter.initDB: failed to init DB :-( " + exc.getMessage());
 			return;
 		}
 	}
@@ -57,7 +57,7 @@ public abstract class AbstractImporter {
 		variable = ncFile.findVariable("lon");
 		Array longitudes = variable.read();
 		
-//		System.out.println("AbstractImporter: NetCDF file contains: " + latitudes.getSize() + " Lats, " + longitudes.getSize() + " Longs");
+		// log.debug("AbstractImporter: NetCDF file contains: " + latitudes.getSize() + " Lats, " + longitudes.getSize() + " Longs");
 		
 		DBGeoGrid grid = new DBGeoGrid((double[])latitudes.copyTo1DJavaArray(), (double[])longitudes.copyTo1DJavaArray());
 		
@@ -71,12 +71,12 @@ public abstract class AbstractImporter {
 		ncFile = NetcdfFile.open(filePath);
 		
 		variable = ncFile.findVariable("time");
-		Array times = variable.read(); // timesmay look like 0 29 60 90 120  ... or days since 1970 e.g. 18055,1234567
+		Array times = variable.read(); // times may look like 0 29 60 90 120  ... or days since 1970 e.g. 18055,1234567
 
 		variable = ncFile.findVariable("rain_rate");
 		Array values = variable.read();
 		
-//		System.out.println("AbstractImporter: NetCDF file contains: " + times.getSize() + " times and " + values.getSize() + " values");
+		log.debug("AbstractImporter: NetCDF file contains: " + times.getSize() + " times and " + values.getSize() + " values");
 		
 		DBValueGrid[] gridArray = new DBValueGrid[(int)times.getSize()];
 		
@@ -84,13 +84,8 @@ public abstract class AbstractImporter {
 		double day = 24 * 60 * 60 * 1000;
 		long timestamp = (long)(times.getDouble(0) * day);
 		
-		Logger.logln("netcdf: " + timestamp + " " + DateTimeFormatter.getDateTimeSeconds(timestamp));
-		Logger.log("--------");
-		System.out.println(Logger.getString());
-		Logger.clear();
-		
-		// System.out.println("Diff between time and time: " + (timestamp - timesta));
-		
+		log.debug("netcdf: " + timestamp + " " + DateTimeFormatter.getDateTimeSeconds(timestamp));
+
 		// in case times.size > 1, then values contains more than only one grid, but times * grid.
 		for (int t=0; t < times.getSize(); t++)
 		{
@@ -110,7 +105,6 @@ public abstract class AbstractImporter {
 			
 			// create a ValueGrid for the time t
 			gridArray[t] = new DBValueGrid(timestamp, 0, gridId, v); // attention: offset is set to 0, set to x if forecast is enabled
-			
 		}
 		
 		ncFile.close();
