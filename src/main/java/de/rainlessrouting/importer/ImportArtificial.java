@@ -10,7 +10,7 @@ import de.rainlessrouting.common.util.DateTimeFormatter;
 public class ImportArtificial extends AbstractImporter {
 
 	private final static long PERIOD = 30000;
-	private final static String TEST_FILE = "src/main/TestData/testData1.nc";
+	private final static String TEST_FILE = "src/main/resources/testData1.nc";
 	private final static String GRID_ID = "test";
 	
 	private long importCount = 0;
